@@ -5,24 +5,12 @@ import re, sys, os, os.path
 from PyQt4 import QtGui, QtCore
 
 pix_dir = os.path.expanduser('~/gitcode/disa/png')
-input_string = "8r\n1r, 3a, 3r, 1a\n4r, 4a"
+#input_string = "8r\n1r, 3a, 3r, 1a\n4r, 4a"
+input_string = "8r\n1r, 1abk2r, 3r, 1a\n4r, 4a"
 
 pix_list = os.listdir(pix_dir)
 
-# Should handle number + letter(s)
-#stitch_dict = {"r": "-", "a": "x"}
-
-re_digit = re.compile("\d+")
-
-
-
-
-#output_string = ""
-
-
 txt_pattern = [[u for u in row.split(", ")] for row in input_string.split("\n")]
-
-#print("START\n{}END".format(output_string))
 
 #widgetlist = []
 #for item in mylist: widgetlist.append(mincoolawidget(args))
@@ -45,6 +33,7 @@ class MainWindow(QtGui.QWidget):
 
     def initPixview(self):
 
+        re_digit = re.compile("\d+")
         p_array = []
 
         # units is an array of stitch codes formatted for pixview
@@ -53,8 +42,14 @@ class MainWindow(QtGui.QWidget):
             row.reverse()
             widget_row = []
             for u in row:
-                repeat = re_digit.match(u).group()
-                stitch_file = u.split(repeat)[1] + '.png'
+                u = re.sub(r'^(\d+)([ar])$', r'\1*\2', u)
+                if '*' in u:    
+                    repeat = re_digit.match(u).group()
+                    stitch_file = u.split('*')[1] + '.png'
+                else:
+                    repeat = 1
+                    stitch_file = u + '.png' 
+                print('{}, {}, {}'.format(u, repeat, stitch_file))
                 if stitch_file in pix_list:
                     for item in range(int(repeat)):
                         widget_row.append(StitchLbl(os.path.join(pix_dir,stitch_file)))
