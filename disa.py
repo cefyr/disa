@@ -4,17 +4,37 @@
 import re, sys, os, os.path
 from PyQt4 import QtGui, QtCore
 
+# Stuff that shouldn't be hardcoded but still is 
 pix_dir = os.path.expanduser('~/gitcode/disa/png')
-#input_string = "8r\n1r, 3a, 3r, 1a\n4r, 4a"
-input_string = "8r\n1r, 1abk2r, 3r, 1a\n4r, 4a"
+#input_string = "8r\n1r, 1abk2r, 3r, 1a\n4r, 4a"
+#txt_pattern = [[u for u in row.split(", ")] for row in input_string[0]]
+pattern_file = os.path.expanduser('~/gitcode/disa/tests/test-keltisk.txt')
 
+
+# Rudimentary file and text handling
+with open(pattern_file, 'r') as f:
+    input_string = f.readlines()
+
+# Make a nice string for the label
+txt_string = ''
+for line in input_string:
+    txt_string += line
+
+#print(input_string)
+#print('END PATTERN\n\n')
 pix_list = os.listdir(pix_dir)
-
-txt_pattern = [[u for u in row.split(", ")] for row in input_string.split("\n")]
-
-#widgetlist = []
-#for item in mylist: widgetlist.append(mincoolawidget(args))
-
+txt_pattern = []
+for string_list in input_string:
+    # string.remove r'^\d+: '
+    # string.remove (\\n)*$
+    # string.split(', ')
+    string_list = re.sub(r'^\d+: (.*)\n', r'\1', string_list)
+    txt_pattern.append(string_list.split(', '))
+    print(string_list)
+        #string = string.split('\n')[0]
+    #txt_pattern += [string.split(', ')]
+print(txt_pattern)
+#print('END PATTERN\n\n')
 
 class StitchLbl(QtGui.QLabel):
 
@@ -38,26 +58,33 @@ class MainWindow(QtGui.QWidget):
 
         # units is an array of stitch codes formatted for pixview
         units = list(reversed(txt_pattern))
+        #units = list(reversed(input_string))
         for row in units:
-            row.reverse()
-            widget_row = []
-            for u in row:
-                u = re.sub(r'^(\d+)([ar])$', r'\1*\2', u)
-                if '*' in u:    
-                    repeat = re_digit.match(u).group()
-                    stitch_file = u.split('*')[1] + '.png'
-                else:
-                    repeat = 1
-                    stitch_file = u + '.png' 
-                print('{}, {}, {}'.format(u, repeat, stitch_file))
-                if stitch_file in pix_list:
-                    for item in range(int(repeat)):
-                        widget_row.append(StitchLbl(os.path.join(pix_dir,stitch_file)))
-            p_array.append(widget_row)
+            print(row)
+            if not row[0] == '#':
+                row.reverse()
+                widget_row = []
+                for u in row:
+                    u = re.sub(r'^(\d+)([ar])$', r'\1*\2', u)
+                    if '*' in u:    
+                        repeat = re_digit.match(u).group()
+                        stitch_file = u.split('*')[1] + '.png'
+                    else:
+                        repeat = 1
+                        stitch_file = u + '.png' 
+#                    print('{}, {}, {}'.format(u, repeat, stitch_file))
+                    if stitch_file in pix_list:
+                        for item in range(int(repeat)):
+                            widget_row.append(StitchLbl(os.path.join(pix_dir,stitch_file)))
+                p_array.append(widget_row)
 
         pbox = QtGui.QVBoxLayout()
+        pbox.setSpacing(0)
+        pbox.setAlignment(QtCore.Qt.AlignTop)
         for row in p_array:
             rbox = QtGui.QHBoxLayout()
+            rbox.setSpacing(0)
+            rbox.setAlignment(QtCore.Qt.AlignLeft)
             for item in row:
                 rbox.addWidget(item)
             pbox.addLayout(rbox)
@@ -68,19 +95,16 @@ class MainWindow(QtGui.QWidget):
     def initUI(self):
 
         pix_view = self.initPixview()
-        text_view = QtGui.QLabel(input_string, self)
+        text_view = QtGui.QLabel(txt_string, self)
+        text_view.setAlignment(QtCore.Qt.AlignTop)
 
-        #splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
-        #splitter.addLayout(pix_view)
-        #splitter.addWidget(text_view)
-
-        #hbox = QtGui.QHBoxLayout(self)
-        #hbox.addWidget(splitter)
-        
+        topside = QtGui.QWidget(self)
+        topside.setLayout(pix_view)
+        splitter = QtGui.QSplitter(QtCore.Qt.Vertical)
+        splitter.addWidget(topside)
+        splitter.addWidget(text_view)
         allbox = QtGui.QVBoxLayout(self)
-        allbox.addLayout(pix_view)
-        allbox.addWidget(text_view)
-
+        allbox.addWidget(splitter)
         self.setLayout(allbox)
         QtGui.QApplication.setStyle(QtGui.QStyleFactory.create('plastique'))
 
